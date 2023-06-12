@@ -14,6 +14,11 @@ public class splashscreen extends AppCompatActivity {
         setContentView(R.layout.activity_splashscreen);
         getSupportActionBar().hide();
 
+//        // Hide the action bar if it exists
+//        ActionBar actionBar = getSupportActionBar();
+//        if (actionBar != null) {
+//            actionBar.hide();
+//        }
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {

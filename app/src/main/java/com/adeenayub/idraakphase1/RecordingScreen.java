@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -16,25 +17,30 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -44,22 +50,41 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import android.graphics.Bitmap;
+import android.util.Base64;
 
-public class RecordingScreen extends AppCompatActivity {
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+public class RecordingScreen extends AppCompatActivity implements TextToSpeech.OnInitListener{
 ImageView record,camera,uploadpicture;
-
 //video stuff
 private static int CAMERA_PERMISSION_CODE = 100;
 private static int VIDEO_RECORD_CODE = 101;
-private static int IMAGE_CAPTURE_CODE = 102;
 private Uri videoPath, imagePath;
 VideoView uploadvideo;
+
 //popup
 private AlertDialog.Builder dialogBuilder;
 private AlertDialog dialog;
 private TextView text_popupTitle, text_popupDescription,help_popupTitle,help_popupDescription;
-private Button text_cancelButton,help_cancelButton,connect;
+private Button text_cancelButton,help_cancelButton;
+
+//text to speech
 String selectedImagePath;
+private static final int REQUEST_IMAGE_CAPTURE = 1;
+Uri imageUri;
+private TextToSpeech textToSpeech;
+Button mButtonSpeak;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +95,11 @@ String selectedImagePath;
         camera = findViewById(R.id.camera_button);
         uploadpicture = findViewById(R.id.taken_picture);
         uploadvideo = findViewById(R.id.taken_video);
-        connect = findViewById(R.id.connectServer);
+
+        mButtonSpeak = findViewById(R.id.speak);
+        // Initialize TextToSpeech
+        textToSpeech = new TextToSpeech(this, this::onInit);
+
 
         camera.setOnClickListener(v -> {
             //using this for image capture for now
@@ -78,93 +107,25 @@ String selectedImagePath;
             if (isCameraPresentInPhone()) {
                 Log.i("Image_capture_tag", "Camera is detected");
                 getCameraPermission();
-                imageCapture();
+                selectImage(v);
             } else {
                 Log.i("Image_capture_tag", "Camera is not detected");
             }
         });
-
-        record.setOnClickListener(v -> {
-            Toast.makeText(this, "Record clicked", Toast.LENGTH_SHORT).show();
-            if (isCameraPresentInPhone()) {
-                Log.i("Video_record_tag", "Camera is detected");
-                getCameraPermission();
-                recordvideo();
-            } else {
-                Log.i("Video_record_tag", "Camera is not detected");
-            }
-        });
-
-        connect.setOnClickListener(v -> {
-
-            String postUrl = "http://172.17.50.18:5000/";
-//            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-//            BitmapFactory.Options options = new BitmapFactory.Options();
-//            options.inPreferredConfig = Bitmap.Config.RGB_565;
-//            // Read BitMap by file path
-//            Bitmap bitmap = BitmapFactory.decodeFile(selectedImagePath, options);
-//            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-//            byte[] byteArray = stream.toByteArray();
-//            Toast.makeText(RecordingScreen.this, "Before", Toast.LENGTH_SHORT).show();
-//            RequestBody postBodyImage = new MultipartBody.Builder()
-//                    .setType(MultipartBody.FORM)
-//                    .addFormDataPart("image", "androidFlask.jpg", RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
-//                    .build();
-//            Toast.makeText(RecordingScreen.this, "After", Toast.LENGTH_SHORT).show();
-//            TextView responseText = findViewById(R.id.responseText);
-//            responseText.setText("Please wait ...");
-//            Toast.makeText(RecordingScreen.this, "Before post request", Toast.LENGTH_SHORT).show();
-//            postRequest(postUrl, postBodyImage);
-//            Toast.makeText(RecordingScreen.this, "after post request", Toast.LENGTH_SHORT).show();
-            String postBodyText = "Hello";
-            MediaType mediaType = MediaType.parse("text/plain; charset=utf-8");
-            RequestBody postBody = RequestBody.create(mediaType, postBodyText);
-            postRequest(postUrl, postBody);
-        });
-    }
-    private void postRequest(String postUrl, RequestBody postBody) {
-        OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder()
-                .url(postUrl)
-                .post(postBody)
-                .build();
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                // Cancel the post on failure.
-                call.cancel();
-                Toast.makeText(RecordingScreen.this, "Failed to connect to server", Toast.LENGTH_SHORT).show();
-                // In order to access the TextView inside the UI thread, the code is executed inside runOnUiThread()
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        TextView responseText = findViewById(R.id.responseText);
-                        responseText.setText("Failed to Connect to Server");
-                    }
-                });
-            }
-
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull final Response response) throws IOException {
-                // In order to access the TextView inside the UI thread, the code is executed inside runOnUiThread()
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        TextView responseText = findViewById(R.id.responseText);
-                        try {
-                            assert response.body() != null;
-                            responseText.setText(response.body().string());
-                            Toast.makeText(RecordingScreen.this, "Connected to server", Toast.LENGTH_SHORT).show();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-            }
-        });
+//
+//        record.setOnClickListener(v -> {
+//            Toast.makeText(this, "Record clicked", Toast.LENGTH_SHORT).show();
+//            if (isCameraPresentInPhone()) {
+//                Log.i("Video_record_tag", "Camera is detected");
+//                getCameraPermission();
+//                recordvideo();
+//            } else {
+//                Log.i("Video_record_tag", "Camera is not detected");
+//            }
+//        });
     }
 
-//menu
+    //menu
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -234,7 +195,6 @@ String selectedImagePath;
         });
     }
 
-
 //video stuff
     private boolean isCameraPresentInPhone() {
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
@@ -254,153 +214,283 @@ String selectedImagePath;
         Intent irecord=new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
         startActivityForResult(irecord,VIDEO_RECORD_CODE);
     }
-    private void imageCapture(){
-        Intent iimgcap=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(iimgcap,IMAGE_CAPTURE_CODE);
-    }
 
-//image flask
-    /*public String predictLetter(Uri imageFile) throws IOException, JSONException {
-        URL url = new URL("http://localhost:5000/predict");
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "image/jpeg");
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//        if (requestCode == VIDEO_RECORD_CODE) {
+//            if (resultCode == RESULT_OK) {
+//                //display video
+//                uploadvideo.setVideoURI(data.getData());
+//                //uploadvideo.start();
+//                MediaController mediaController = new MediaController(this);
+//                uploadvideo.setMediaController(mediaController);
+//                mediaController.setAnchorView(uploadvideo);
+//                //storage
+//                videoPath = data.getData();
+//                Log.i("Video_record_tag","Video recorded at path " + videoPath);
+//                Toast.makeText(this, "Video recorded successfully", Toast.LENGTH_SHORT).show();
+//            }
+//            else if (resultCode == RESULT_CANCELED) {
+//                Log.i("Video_record_tag","Video recording cancelled");
+//                Toast.makeText(this, "Video recording cancelled", Toast.LENGTH_SHORT).show();
+//            }
+//            else {
+//                Log.i("Video_record_tag","Video recording failed");
+//                Toast.makeText(this, "Video recording failed", Toast.LENGTH_SHORT).show();
+//            }
+//        }
 
-        // Set the image file as the request body
-        connection.setDoOutput(true);
-        OutputStream outputStream = connection.getOutputStream();
-        FileInputStream inputStream = new FileInputStream(imageFile);
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, bytesRead);
+    //text-to-speech and flask
+    public void connectServer(View view) {
+        String postUrl = "http://192.168.1.4:5000/upload";
+//        String postBodyText = "Hello";
+//        MediaType mediaType = MediaType.parse("text/plain; charset=utf-8");
+//        RequestBody postBody = RequestBody.create(mediaType, postBodyText);
+
+        // Check if an image is captured
+        if (imageUri != null) {
+            Bitmap bitmap;
+            try {
+                bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+
+                RequestBody postBodyImage = new MultipartBody.Builder()
+                        .setType(MultipartBody.FORM)
+                        .addFormDataPart("image", "androidFlask1.jpg", RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
+                        .build();
+
+                TextView responseText = findViewById(R.id.responseText);
+                responseText.setText("Please wait ...");
+
+                // Execute the network operation in an AsyncTask
+                new NetworkTask().execute(postUrl, postBodyImage);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            Toast.makeText(this, "Capture an image first.", Toast.LENGTH_SHORT).show();
         }
 
-        // Read the response
-        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        StringBuilder responseBuilder = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            responseBuilder.append(line);
+//        //image
+//        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+//        BitmapFactory.Options options = new BitmapFactory.Options();
+//        options.inPreferredConfig = Bitmap.Config.RGB_565;
+//        // Read BitMap by file path
+//        Bitmap bitmap = BitmapFactory.decodeFile(selectedImagePath, options);
+//        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+//        byte[] byteArray = stream.toByteArray();
+//
+//        RequestBody postBodyImage = new MultipartBody.Builder()
+//                .setType(MultipartBody.FORM)
+//                .addFormDataPart("image", "androidFlask1.jpg", RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
+//                .build();
+//
+//        TextView responseText = findViewById(R.id.responseText);
+//        responseText.setText("Please wait ...");
+//
+//        // Execute the network operation in an AsyncTask
+//        new NetworkTask().execute(postUrl, postBodyImage);
+    }
+
+    @Override
+    public void onInit(int status) {
+        if (status == TextToSpeech.SUCCESS) {
+            int result = textToSpeech.setLanguage(new Locale("ur"));
+
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Toast.makeText(this, "Language not supported.", Toast.LENGTH_SHORT).show();
+            } else {
+                mButtonSpeak.setEnabled(true);
+            }
+        } else {
+            Toast.makeText(this, "TextToSpeech initialization failed.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    private class NetworkTask extends AsyncTask<Object, Void, String> {
+
+        @Override
+        protected String doInBackground(Object... params) {
+            String postUrl = (String) params[0];
+            RequestBody postBody = (RequestBody) params[1];
+
+            OkHttpClient client = new OkHttpClient();
+
+            Request request = new Request.Builder()
+                    .url(postUrl)
+                    .post(postBody)
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful() && response.body() != null) {
+                    return response.body().string();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
 
-        // Parse the response as JSON
-        JSONObject jsonResponse = new JSONObject(responseBuilder.toString());
-        String prediction = jsonResponse.getString("prediction");
+        //        @SuppressLint("SetTextI18n")
+//        @Override
+//        protected void onPostExecute(String result) {
+//            if (result != null) {
+//                TextView responseText = findViewById(R.id.responseText);
+//                responseText.setText(result);
+//            } else {
+//                TextView responseText = findViewById(R.id.responseText);
+//                responseText.setText("Failed to Connect to Server");
+//            }
+//        }
+        @SuppressLint("SetTextI18n")
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                try {
+                    JSONObject responseJson = new JSONObject(result);
+                    String message = responseJson.optString("message");
 
-        return prediction;
-    }*/
-/*public String predictLetter(Uri imageUri) throws IOException, JSONException {
-    URL url = new URL("http://127.0.0.1:5000/");
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-    connection.setRequestMethod("POST");
-    connection.setRequestProperty("Content-Type", "image/jpeg");
+                    if (message.equals("Image processed successfully!")) {
+                        //String uploadedImageBase64 = responseJson.optString("uploaded_image");
+                        //String processedImageBase64 = responseJson.optString("processed_image");
+                        String predictedLetter = responseJson.optString("prediction");
 
-    // Set the image file as the request body
-    connection.setDoOutput(true);
-    OutputStream outputStream = connection.getOutputStream();
-    InputStream inputStream = getContentResolver().openInputStream(imageUri);
-    byte[] buffer = new byte[4096];
-    int bytesRead;
-    while ((bytesRead = inputStream.read(buffer)) != -1) {
-        outputStream.write(buffer, 0, bytesRead);
+                        // Convert base64 strings to bitmaps
+                        //Bitmap uploadedImageBitmap = decodeBase64Image(uploadedImageBase64);
+                        //Bitmap processedImageBitmap = decodeBase64Image(processedImageBase64);
+
+                        // Set the images in image views
+                        //ImageView uploadedImageView = findViewById(R.id.uploadedImageView);
+                        //ImageView processedImageView = findViewById(R.id.processedImageView);
+                        //uploadedImageView.setImageBitmap(uploadedImageBitmap);
+                        //processedImageView.setImageBitmap(processedImageBitmap);
+
+                        // Set the predicted letter in a text view
+                        TextView predictedLetterTextView = findViewById(R.id.predictedLetterTextView);
+                        predictedLetterTextView.setText(predictedLetter);
+
+//                        // Speak the converted text
+//                        textToSpeech.speak(predictedLetter, TextToSpeech.QUEUE_FLUSH, null);
+
+                    } else {
+                        TextView responseText = findViewById(R.id.responseText);
+                        responseText.setText("Image processing failed.");
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    TextView responseText = findViewById(R.id.responseText);
+                    responseText.setText("Failed to parse server response.");
+                }
+            } else {
+                TextView responseText = findViewById(R.id.responseText);
+                responseText.setText("Failed to connect to the server.");
+            }
+        }
+
+        private Bitmap decodeBase64Image(String base64Image) {
+            byte[] imageBytes = Base64.decode(base64Image, Base64.DEFAULT);
+            return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+        }
     }
 
-    // Read the response
-    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-    StringBuilder responseBuilder = new StringBuilder();
-    String line;
-    while ((line = reader.readLine()) != null) {
-        responseBuilder.append(line);
+    public void selectImage(View v) {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
     }
-
-    // Parse the response as JSON
-    JSONObject jsonResponse = new JSONObject(responseBuilder.toString());
-    String prediction = jsonResponse.getString("prediction");
-
-    return prediction;
-}*/
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == VIDEO_RECORD_CODE) {
-            if (resultCode == RESULT_OK) {
-                //display video
-                uploadvideo.setVideoURI(data.getData());
-                //uploadvideo.start();
-                MediaController mediaController = new MediaController(this);
-                uploadvideo.setMediaController(mediaController);
-                mediaController.setAnchorView(uploadvideo);
-                //storage
-                videoPath = data.getData();
-                Log.i("Video_record_tag","Video recorded at path " + videoPath);
-                Toast.makeText(this, "Video recorded successfully", Toast.LENGTH_SHORT).show();
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            uploadpicture.setImageBitmap(imageBitmap);
+
+            // Create a file to store the captured image
+            File imageFile = null;
+            try {
+                imageFile = createImageFile();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            else if (resultCode == RESULT_CANCELED) {
-                Log.i("Video_record_tag","Video recording cancelled");
-                Toast.makeText(this, "Video recording cancelled", Toast.LENGTH_SHORT).show();
-            }
-            else {
-                Log.i("Video_record_tag","Video recording failed");
-                Toast.makeText(this, "Video recording failed", Toast.LENGTH_SHORT).show();
-            }
-        }
-        if (requestCode == IMAGE_CAPTURE_CODE) {
-            if (resultCode == RESULT_OK && data != null) {
-                //upload image
-                Bundle bundle= data.getExtras();
-                Bitmap finalphoto=(Bitmap) bundle.get("data");
-                uploadpicture.setImageBitmap(finalphoto);
-                //predict image
-                imagePath = data.getData();
-                // Get the image file URI
-                Uri imageUri = Uri.fromFile(new File(String.valueOf(imagePath)));
 
-// Define the content values for the new image
-                ContentValues values = new ContentValues();
-                values.put(MediaStore.Images.Media.TITLE, "My Image Title");
-                values.put(MediaStore.Images.Media.DESCRIPTION, "My Image Description");
-                values.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis());
-                values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpg");
-                values.put(MediaStore.Images.Media.ORIENTATION, 0);
-                values.put(MediaStore.Images.Media.DATA, String.valueOf(imagePath));
-// Save the image to the gallery
-                ContentResolver contentResolver = getContentResolver();
-                Uri uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            // Save the image to the file
+            if (imageFile != null) {
+                try {
+                    FileOutputStream outputStream = new FileOutputStream(imageFile);
+                    imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                    outputStream.flush();
+                    outputStream.close();
 
-// Notify the gallery app that a new image has been added
-                sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
+                    selectedImagePath = imageFile.getAbsolutePath();
+                    TextView imgPath = findViewById(R.id.imgPath);
+                    imgPath.setText(selectedImagePath);
 
-                selectedImagePath = getPath(getApplicationContext(), imageUri);
-                Toast.makeText(RecordingScreen.this, "Before", Toast.LENGTH_SHORT).show();
-
-                Toast.makeText(getApplicationContext(), selectedImagePath, Toast.LENGTH_LONG).show();
-
-                Log.i("Image_capture_tag","Image captured at path " + imagePath);
-                Toast.makeText(this, "Image captured successfully", Toast.LENGTH_SHORT).show();
-                /*try {
-                    predictedclass=predictLetter(imagePath);
-                    // Display the predicted class in the TextView
-                    TextView textView = findViewById(R.id.text_popup_description);
-                    textView.setText(predictedclass);
-
+                    imageUri = Uri.fromFile(imageFile);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }*/
-            }
-            else if (resultCode == RESULT_CANCELED) {
-                Log.i("Image_capture_tag","Image capture cancelled");
-                Toast.makeText(this, "Image captured cancelled", Toast.LENGTH_SHORT).show();
-            }
-            else {
-                Log.i("Image_capture_tag","Image captured failed");
-                Toast.makeText(this, "Image captured failed", Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
+                }
             }
         }
     }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+        return image;
+    }
+
+    // Stop TextToSpeech and release resources
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+        }
+    }
+
+    public void playAudio(View view) {
+        String predictedLetter = ((TextView) findViewById(R.id.predictedLetterTextView)).getText().toString();
+//        textToSpeech.speak(predictedLetter, TextToSpeech.QUEUE_FLUSH, null);
+        textToSpeech.speak(predictedLetter, TextToSpeech.QUEUE_FLUSH, null);
+    }
+
+
+//    public void selectImage(View v) {
+//        Intent intent = new Intent();
+//        intent.setType("*/*");
+//        intent.setAction(Intent.ACTION_GET_CONTENT);
+//        startActivityForResult(intent, 0);
+//    }
+//
+//    @Override
+//    protected void onActivityResult(int reqCode, int resCode, Intent data) {
+//        super.onActivityResult(reqCode, resCode, data);
+//        if (resCode == RESULT_OK && data != null) {
+//            Uri uri = data.getData();
+//
+//            selectedImagePath = getPath(getApplicationContext(), uri);
+//            EditText imgPath = findViewById(R.id.imgPath);
+//            imgPath.setText(selectedImagePath);
+//            Toast.makeText(getApplicationContext(), selectedImagePath, Toast.LENGTH_LONG).show();
+//        }
+//    }
+//
+
     // Implementation of the getPath() method and all its requirements is taken from the StackOverflow Paul Burke's answer: https://stackoverflow.com/a/20559175/5426539
     public static String getPath(final Context context, final Uri uri) {
 
@@ -464,8 +554,7 @@ String selectedImagePath;
         return null;
     }
 
-    public static String getDataColumn(Context context, Uri uri, String selection,
-                                       String[] selectionArgs) {
+    public static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
 
         Cursor cursor = null;
         final String column = "_data";

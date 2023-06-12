@@ -17,49 +17,81 @@
         app:title="Recording" />
 
     <RelativeLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_marginLeft="80dp"
+        android:layout_marginTop="80dp"
+        android:layout_centerHorizontal="true"
+        android:scaleType="centerCrop">
 
         <VideoView
             android:id="@+id/taken_video"
-            android:layout_width="250dp"
-            android:layout_height="250dp"
-            android:layout_marginLeft="80dp"
-            android:layout_marginTop="100dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
             android:id="@+id/taken_picture"
-            android:layout_width="250dp"
-            android:layout_height="250dp"
-            android:layout_marginLeft="80dp"
-            android:layout_marginTop="100dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"/>
+<!--            android:src="@drawable/lam"/>-->
     </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="450dp"
+        android:layout_marginTop="350dp"
         android:orientation="vertical">
 
-        <Button
+        <TextView
+            android:id="@+id/imgPath"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Image Path"/>
+
+        <Button
+            android:id="@+id/connectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_below="@id/imgPath"
             android:text="Connect to Server"
-            android:id="@+id/connectServer"/>
+            android:onClick="connectServer" />
 
         <TextView
+            android:id="@+id/responseText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Message from the Server ..."
-            android:id="@+id/responseText" />
-    </LinearLayout>
+            android:layout_below="@id/connectButton"
+            android:layout_marginTop="10dp"
+            android:textAlignment="center"
+            android:text="Message from the Server ..." />
 
+        <TextView
+            android:id="@+id/predictedLetterTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/responseText"
+            android:layout_marginTop="15dp"
+            android:textAlignment="center" />
+        <Button
+            android:id="@+id/speak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/predictedLetterTextView"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:text="Play Audio"
+            android:onClick="playAudio" />
+    </LinearLayout>
 
         <ImageView
             android:id="@+id/record_button"
@@ -75,5 +107,7 @@
             android:layout_marginTop="630dp"
             android:layout_marginLeft="210dp"
             android:src="@drawable/ic_baseline_photo_camera_24"/>
+<!--            android:onClick="selectImage"-->
+
 
 </RelativeLayout>
