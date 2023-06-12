@@ -112,17 +112,17 @@ Button mButtonSpeak;
                 Log.i("Image_capture_tag", "Camera is not detected");
             }
         });
-//
-//        record.setOnClickListener(v -> {
-//            Toast.makeText(this, "Record clicked", Toast.LENGTH_SHORT).show();
-//            if (isCameraPresentInPhone()) {
-//                Log.i("Video_record_tag", "Camera is detected");
-//                getCameraPermission();
-//                recordvideo();
-//            } else {
-//                Log.i("Video_record_tag", "Camera is not detected");
-//            }
-//        });
+
+        record.setOnClickListener(v -> {
+            Toast.makeText(this, "Record clicked", Toast.LENGTH_SHORT).show();
+            if (isCameraPresentInPhone()) {
+                Log.i("Video_record_tag", "Camera is detected");
+                getCameraPermission();
+                recordvideo();
+            } else {
+                Log.i("Video_record_tag", "Camera is not detected");
+            }
+        });
     }
 
     //menu
@@ -214,32 +214,6 @@ Button mButtonSpeak;
         Intent irecord=new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
         startActivityForResult(irecord,VIDEO_RECORD_CODE);
     }
-
-//    @Override
-//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        super.onActivityResult(requestCode, resultCode, data);
-//        if (requestCode == VIDEO_RECORD_CODE) {
-//            if (resultCode == RESULT_OK) {
-//                //display video
-//                uploadvideo.setVideoURI(data.getData());
-//                //uploadvideo.start();
-//                MediaController mediaController = new MediaController(this);
-//                uploadvideo.setMediaController(mediaController);
-//                mediaController.setAnchorView(uploadvideo);
-//                //storage
-//                videoPath = data.getData();
-//                Log.i("Video_record_tag","Video recorded at path " + videoPath);
-//                Toast.makeText(this, "Video recorded successfully", Toast.LENGTH_SHORT).show();
-//            }
-//            else if (resultCode == RESULT_CANCELED) {
-//                Log.i("Video_record_tag","Video recording cancelled");
-//                Toast.makeText(this, "Video recording cancelled", Toast.LENGTH_SHORT).show();
-//            }
-//            else {
-//                Log.i("Video_record_tag","Video recording failed");
-//                Toast.makeText(this, "Video recording failed", Toast.LENGTH_SHORT).show();
-//            }
-//        }
 
     //text-to-speech and flask
     public void connectServer(View view) {
@@ -438,7 +412,27 @@ Button mButtonSpeak;
                 }
             }
         }
-    }
+        if (requestCode == VIDEO_RECORD_CODE && resultCode == RESULT_OK) {
+                //display video
+                uploadvideo.setVideoURI(data.getData());
+                //uploadvideo.start();
+                MediaController mediaController = new MediaController(this);
+                uploadvideo.setMediaController(mediaController);
+                mediaController.setAnchorView(uploadvideo);
+                //storage
+                videoPath = data.getData();
+                Log.i("Video_record_tag","Video recorded at path " + videoPath);
+                Toast.makeText(this, "Video recorded successfully", Toast.LENGTH_SHORT).show();
+            }
+            else if (resultCode == RESULT_CANCELED) {
+                Log.i("Video_record_tag","Video recording cancelled");
+                Toast.makeText(this, "Video recording cancelled", Toast.LENGTH_SHORT).show();
+            }
+            else {
+                Log.i("Video_record_tag","Video recording failed");
+                Toast.makeText(this, "Video recording failed", Toast.LENGTH_SHORT).show();
+            }
+        }
 
     private File createImageFile() throws IOException {
         // Create an image file name
