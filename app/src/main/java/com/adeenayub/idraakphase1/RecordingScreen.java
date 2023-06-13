@@ -217,7 +217,7 @@ Button mButtonSpeak;
 
     //text-to-speech and flask
     public void connectServer(View view) {
-        String postUrl = "http://192.168.1.4:5000/upload";
+        String postUrl = "http://172.16.47.154:5000/upload";
 //        String postBodyText = "Hello";
 //        MediaType mediaType = MediaType.parse("text/plain; charset=utf-8");
 //        RequestBody postBody = RequestBody.create(mediaType, postBodyText);

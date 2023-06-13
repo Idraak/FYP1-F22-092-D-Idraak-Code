@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@drawable/bg2"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="200dp"
-        android:layout_marginTop="30dp">
+        android:layout_marginTop="80dp">
 
         <ImageView
             android:layout_width="match_parent"
@@ -26,30 +26,42 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="500dp"
-        android:layout_marginTop="250dp">
-
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="500dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/blue_rectangle"/>
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="500dp"
-            android:layout_marginTop="50dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/medium_blue_rectangle"/>
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="500dp"
-            android:layout_marginTop="100dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/dark_purple_rectangle"/>
-
+        android:layout_marginTop="110dp">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_marginTop="150dp">
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+            <ImageView
+                android:layout_width="500dp"
+                android:layout_height="45dp"
+                android:src="@drawable/white_rectangle"/>
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="70dp"
+            android:src="@drawable/ic_baseline_person_24"/>
+            <EditText
+                android:id="@+id/main_username"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:background="@android:color/transparent"
+                android:hint="USERNAME"
+                android:paddingLeft="160dp"
+                android:paddingTop="10dp"
+                android:textColor="#000000"
+                android:textSize="20dp"
+                android:textStyle="bold"/>
+        </RelativeLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="220dp">
 
         <RelativeLayout
             android:layout_width="wrap_content"
@@ -62,79 +74,46 @@
             <ImageView
                 android:layout_width="100dp"
                 android:layout_height="45dp"
-                android:src="@drawable/ic_baseline_person_24"
+                android:src="@drawable/ic_baseline_lock_24"
                 android:layout_marginLeft="70dp"/>
 
             <EditText
-                android:id="@+id/main_username"
+                android:id="@+id/main_password"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
                 android:background="@android:color/transparent"
-                android:hint="USERNAME"
+                android:hint="PASSWORD"
+                android:inputType="textPassword"
                 android:paddingLeft="160dp"
                 android:paddingTop="10dp"
                 android:textColor="#000000"
-                android:textSize="18dp"
+                android:textSize="20dp"
                 android:textStyle="bold" />
         </RelativeLayout>
-
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="220dp">
-
-            <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent">
-
-                <ImageView
-                    android:layout_width="500dp"
-                    android:layout_height="45dp"
-                    android:src="@drawable/white_rectangle" />
-                <ImageView
-                    android:layout_width="100dp"
-                    android:layout_height="45dp"
-                    android:src="@drawable/ic_baseline_lock_24"
-                    android:layout_marginLeft="70dp"/>
-
-                <EditText
-                    android:id="@+id/main_password"
-                    android:layout_width="match_parent"
-                    android:layout_height="45dp"
-                    android:paddingLeft="160dp"
-                    android:paddingTop="10dp"
-                    android:hint="PASSWORD"
-                    android:textStyle="bold"
-                    android:textColor="#000000"
-                    android:textSize="18dp"
-                    android:background="@android:color/transparent"
-                    android:inputType="textPassword"/>
-            </RelativeLayout>
-
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="35dp"
-            android:layout_marginTop="260dp">
+            android:layout_height="match_parent"
+            android:layout_marginTop="265dp">
 
             <CheckBox
                 android:id="@+id/checkbox"
                 android:layout_width="wrap_content"
-                android:layout_height="25dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="100dp"
+                android:layout_marginTop="20dp"
                 android:text="Show Password"
-                android:layout_marginTop="10dp"
-                android:layout_marginLeft="70dp"
-                android:textColor="@color/white"
-                android:textSize="18dp"/>
+                android:textColor="@color/black"
+                android:textSize="22dp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginTop="310dp">
+            android:layout_height="50dp"
+            android:layout_marginTop="330dp">
 
             <RelativeLayout
                 android:layout_width="wrap_content"
@@ -150,12 +129,12 @@
                     android:id="@+id/login"
                     android:layout_width="match_parent"
                     android:layout_height="45dp"
-                    android:paddingLeft="180dp"
+                    android:paddingLeft="175dp"
                     android:paddingTop="8dp"
                     android:text="Login"
                     android:textStyle="bold"
                     android:textColor="#000000"
-                    android:textSize="18dp" />
+                    android:textSize="20dp" />
             </RelativeLayout>
 
         </LinearLayout>
@@ -163,14 +142,14 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="30dp"
-            android:layout_marginTop="360dp">
+            android:layout_marginTop="380dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="30dp"
                 android:text="or"
                 android:layout_marginLeft="190dp"
-                android:textColor="@color/white"
+                android:textColor="@color/black"
                 android:textSize="18dp"/>
 
         </LinearLayout>
@@ -178,7 +157,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:layout_marginTop="400dp">
+            android:layout_marginTop="420dp">
 
             <RelativeLayout
                 android:layout_width="wrap_content"
@@ -194,12 +173,12 @@
                     android:id="@+id/signup"
                     android:layout_width="match_parent"
                     android:layout_height="45dp"
-                    android:paddingLeft="170dp"
+                    android:paddingLeft="165dp"
                     android:paddingTop="8dp"
                     android:text="Sign Up"
                     android:textStyle="bold"
                     android:textColor="#000000"
-                    android:textSize="18dp" />
+                    android:textSize="20dp" />
             </RelativeLayout>
 
         </LinearLayout>
